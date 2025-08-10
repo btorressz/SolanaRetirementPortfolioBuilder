@@ -1,0 +1,308 @@
+{% extends "base.html" %}
+
+{% block title %}Rebalance - Solana Retirement Portfolio{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Portfolio Rebalancing</h2>
+                    <p class="text-muted mb-0">Simulate and execute trades to reach target allocation</p>
+                </div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Current vs Target -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Current vs Target Weights</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Token</th>
+                                    <th>Current Price</th>
+                                    <th>Current Weight</th>
+                                    <th>Target Weight</th>
+                                    <th>Drift</th>
+                                    <th>Current Value</th>
+                                    <th>Target Value</th>
+                                </tr>
+                            </thead>
+                            <tbody id="weightsTable">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Rebalance Simulation -->
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="card border-0 shadow-sm mb-4">
+                        <div class="card-header bg-transparent border-0">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <h5 class="card-title mb-0">Rebalance Simulation</h5>
+                                <button class="btn btn-primary" id="simulateBtn">
+                                    <i class="fas fa-calculator me-1"></i>Simulate Trades
+                                </button>
+                            </div>
+                        </div>
+                        <div class="card-body">
+                            <div id="simulationResults" style="display: none;">
+                                <!-- Trade List -->
+                                <div class="mb-4">
+                                    <h6 class="mb-3">Required Trades</h6>
+                                    <div class="table-responsive">
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Token</th>
+                                                    <th>Side</th>
+                                                    <th>Quantity</th>
+                                                    <th>Value</th>
+                                                    <th>Est. Slippage</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tradesTable">
+                                                <!-- Populated by JavaScript -->
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <!-- Cost Summary -->
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="bg-light p-3 rounded">
+                                            <h6 class="mb-3">Cost Summary</h6>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Total Trade Value:</span>
+                                                <span id="totalTradeValue" class="fw-bold">$0.00</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Estimated Slippage:</span>
+                                                <span id="totalSlippage" class="text-warning fw-bold">$0.00</span>
+                                            </div>
+                                            <hr>
+                                            <div class="d-flex justify-content-between">
+                                                <span class="fw-bold">Total Cost:</span>
+                                                <span id="totalCost" class="fw-bold text-danger">$0.00</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="bg-light p-3 rounded">
+                                            <h6 class="mb-3">Impact Analysis</h6>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Cost as % of Portfolio:</span>
+                                                <span id="costPercentage" class="fw-bold">0.00%</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between mb-2">
+                                                <span>Number of Trades:</span>
+                                                <span id="numTrades" class="fw-bold">0</span>
+                                            </div>
+                                            <div class="d-flex justify-content-between">
+                                                <span>Avg Slippage Rate:</span>
+                                                <span id="avgSlippage" class="fw-bold">0.00%</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Execute Button -->
+                                <div class="text-center mt-4">
+                                    <button class="btn btn-success btn-lg" id="executeBtn">
+                                        <i class="fas fa-check me-1"></i>Execute Rebalance
+                                    </button>
+                                    <button class="btn btn-secondary btn-lg ms-2" id="cancelBtn">
+                                        <i class="fas fa-times me-1"></i>Cancel
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="noSimulation" class="text-center py-5">
+                                <i class="fas fa-chart-bar fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">Click "Simulate Trades" to see rebalancing analysis</h5>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sidebar: Rebalance History -->
+                <div class="col-lg-4">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-transparent border-0 pb-0">
+                            <h6 class="card-title mb-0">Rebalance History</h6>
+                        </div>
+                        <div class="card-body">
+                            <div id="rebalanceHistory">
+                                <div class="text-center text-muted py-4">
+                                    <i class="fas fa-history fa-2x mb-2"></i>
+                                    <div>No rebalances yet</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Stats -->
+                    <div class="card border-0 shadow-sm mt-4">
+                        <div class="card-header bg-transparent border-0 pb-0">
+                            <h6 class="card-title mb-0">Rebalancing Stats</h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <div class="stat-value" id="totalRebalances">0</div>
+                                    <div class="stat-label">Total Rebalances</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="totalCostPaid">$0.00</div>
+                                    <div class="stat-label">Total Cost Paid</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="avgCostPaid">$0.00</div>
+                                    <div class="stat-label">Average Cost</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value" id="lastRebalance">Never</div>
+                                    <div class="stat-label">Last Rebalance</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Rebalance</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>You are about to execute a rebalance with the following impact:</p>
+                <ul class="list-unstyled">
+                    <li><strong>Total Cost:</strong> <span id="confirmCost">$0.00</span></li>
+                    <li><strong>Number of Trades:</strong> <span id="confirmTrades">0</span></li>
+                    <li><strong>Estimated Slippage:</strong> <span id="confirmSlippage">$0.00</span></li>
+                </ul>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    This action cannot be undone. Proceed with caution.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-success" id="confirmExecute">
+                    <i class="fas fa-check me-1"></i>Execute Now
+                </button>
+            </div>
+
+            <!-- Tax-Lot Simulator -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-1">Tax-Lot Simulator</h5>
+                            <small class="text-muted">Educational tool for tax-loss harvesting analysis</small>
+                        </div>
+                        <button class="btn btn-outline-primary btn-sm" id="taxSimulateBtn">
+                            <i class="fas fa-receipt me-1"></i>Simulate Tax Impact
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="form-label">Tax Lot Method</label>
+                            <select class="form-select" id="taxMethod">
+                                <option value="FIFO">FIFO (First In, First Out)</option>
+                                <option value="LIFO">LIFO (Last In, First Out)</option>
+                                <option value="HIFO">HIFO (Highest Cost, First Out)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Current Tax Rate (%)</label>
+                            <input type="number" class="form-control" id="taxRate" value="22" min="0" max="50" step="0.1">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Long-term Capital Gains Rate (%)</label>
+                            <input type="number" class="form-control" id="ltcgRate" value="15" min="0" max="30" step="0.1">
+                        </div>
+                    </div>
+                    
+                    <div id="taxResults" style="display: none;">
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-success mb-1" id="taxLossHarvest">$0.00</div>
+                                    <small class="text-muted">Tax Loss Harvested</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-danger mb-1" id="taxLiability">$0.00</div>
+                                    <small class="text-muted">Tax Liability</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-primary mb-1" id="netTaxImpact">$0.00</div>
+                                    <small class="text-muted">Net Tax Impact</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <div class="h4 text-info mb-1" id="afterTaxReturn">$0.00</div>
+                                    <small class="text-muted">After-Tax Return</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Token</th>
+                                        <th>Lots Used</th>
+                                        <th>Gain/Loss</th>
+                                        <th>Term</th>
+                                        <th>Tax Impact</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="taxLotsTable">
+                                    <!-- Populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-info mt-3">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Educational Disclaimer:</strong> This simulator is for educational purposes only and should not be considered financial or tax advice. Please consult with a qualified tax professional for actual tax planning decisions.
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/rebalance.js') }}"></script>
+{% endblock %}

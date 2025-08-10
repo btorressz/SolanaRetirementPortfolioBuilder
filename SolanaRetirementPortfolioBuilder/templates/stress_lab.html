@@ -1,0 +1,412 @@
+{% extends "base.html" %}
+
+{% block title %}Stress Lab - Solana Retirement Portfolio{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Stress Testing Laboratory</h2>
+                    <p class="text-muted mb-0">Stress test your portfolio under extreme market conditions</p>
+                </div>
+                <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Left Column: Controls -->
+        <div class="col-lg-4">
+            <!-- Predefined Scenarios -->
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Predefined Scenarios</h5>
+                </div>
+                <div class="card-body">
+                    <div class="scenario-list">
+                        {% for scenario in scenarios %}
+                        <div class="scenario-card mb-3 p-3 border rounded">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <h6 class="mb-0">{{ scenario.name }}</h6>
+                                <span class="badge bg-{{ 'danger' if scenario.severity == 'Extreme' else 'warning' if scenario.severity == 'Severe' else 'secondary' if scenario.severity == 'High' else 'info' }}">
+                                    {{ scenario.severity }}
+                                </span>
+                            </div>
+                            <p class="text-muted small mb-2">{{ scenario.description }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <small class="text-muted">
+                                    {{ scenario.duration_days }}d simulation
+                                </small>
+                                <button class="btn btn-sm btn-primary scenario-btn" 
+                                        data-scenario="{{ scenario.id }}">
+                                    Run Test
+                                </button>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Custom Scenario -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Custom Scenario</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Price Shock (%)</label>
+                        <input type="range" class="form-range" id="priceShockSlider" 
+                               min="-80" max="200" value="-30" step="5">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">-80%</small>
+                            <span id="priceShockValue" class="fw-bold">-30%</span>
+                            <small class="text-muted">+200%</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Slippage Multiplier</label>
+                        <input type="range" class="form-range" id="slippageSlider" 
+                               min="1" max="10" value="2" step="0.5">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">1x</small>
+                            <span id="slippageValue" class="fw-bold">2.0x</span>
+                            <small class="text-muted">10x</small>
+                        </div>
+                    </div>
+
+                    <button class="btn btn-warning w-100" id="runCustomBtn">
+                        <i class="fas fa-flask me-1"></i>Run Custom Test
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Results -->
+        <div class="col-lg-8">
+            <!-- Results Display -->
+            <div id="stressResults" style="display: none;">
+                <!-- Summary Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <div class="metric-value text-danger" id="maxDrawdown">-0%</div>
+                                <div class="metric-label">Max Drawdown</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <div class="metric-value" id="recoveryDays">0</div>
+                                <div class="metric-label">Recovery Days</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <div class="metric-value" id="finalReturn">+0%</div>
+                                <div class="metric-label">Final Return</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 bg-light">
+                            <div class="card-body text-center">
+                                <div class="metric-value" id="stressVolatility">0%</div>
+                                <div class="metric-label">Stress Volatility</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NAV Recovery Chart -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-transparent border-0">
+                        <h5 class="card-title mb-0">NAV Recovery Path</h5>
+                    </div>
+                    <div class="card-body">
+                        <div style="height: 300px;">
+                            <canvas id="recoveryChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <!-- Metrics Table -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h6 class="card-title mb-0">Stress Metrics</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-sm">
+                                        <tbody id="metricsTable">
+                                            <!-- Populated by JavaScript -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rebalancing Analysis -->
+                    <div class="col-md-6">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0">
+                                <h6 class="card-title mb-0">Rebalancing Under Stress</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-warning" id="rebalanceRecommendation">
+                                    Loading analysis...
+                                </div>
+                                <div class="stress-rebalance-stats">
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Normal Cost:</span>
+                                        <span id="normalCost">$0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Stressed Cost:</span>
+                                        <span id="stressedCost">$0</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between mb-2">
+                                        <span>Cost Increase:</span>
+                                        <span id="costIncrease" class="text-warning">+0%</span>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <span>Liquidity Risk:</span>
+                                        <span id="liquidityRisk" class="badge bg-secondary">Low</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Initial State -->
+            <div id="stressInitial" class="text-center py-5">
+                <i class="fas fa-vial fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">Select a scenario to run stress test</h4>
+                <p class="text-muted">Test how your portfolio performs under extreme market conditions</p>
+            </div>
+
+            <!-- Loading State -->
+            <div id="stressLoading" style="display: none;" class="text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5 class="text-muted">Running stress test...</h5>
+                <p class="text-muted">Simulating market conditions and recovery path</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+class StressTestLab {
+    constructor() {
+        this.chart = null;
+        this.bindEvents();
+    }
+
+    bindEvents() {
+        // Slider updates
+        document.getElementById('priceShockSlider').addEventListener('input', (e) => {
+            document.getElementById('priceShockValue').textContent = `${e.target.value}%`;
+        });
+
+        document.getElementById('slippageSlider').addEventListener('input', (e) => {
+            document.getElementById('slippageValue').textContent = `${e.target.value}x`;
+        });
+
+        // Scenario buttons
+        document.querySelectorAll('.scenario-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.runScenario(e.target.dataset.scenario);
+            });
+        });
+
+        // Custom test button
+        document.getElementById('runCustomBtn').addEventListener('click', () => {
+            this.runCustomTest();
+        });
+    }
+
+    async runScenario(scenarioId) {
+        this.showLoading();
+        
+        try {
+            const response = await fetch('/api/stress/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ scenario_id: scenarioId })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                this.displayResults(data.stress_test);
+            } else {
+                throw new Error(data.error || 'Stress test failed');
+            }
+        } catch (error) {
+            console.error('Error running stress test:', error);
+            alert('Failed to run stress test: ' + error.message);
+            this.hideLoading();
+        }
+    }
+
+    async runCustomTest() {
+        const priceShock = parseFloat(document.getElementById('priceShockSlider').value);
+        const slippageMultiplier = parseFloat(document.getElementById('slippageSlider').value);
+
+        this.showLoading();
+
+        try {
+            const response = await fetch('/api/stress/run', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    price_shock_pct: priceShock,
+                    slippage_multiplier: slippageMultiplier 
+                })
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                this.displayResults(data.stress_test);
+            } else {
+                throw new Error(data.error || 'Custom stress test failed');
+            }
+        } catch (error) {
+            console.error('Error running custom stress test:', error);
+            alert('Failed to run custom stress test: ' + error.message);
+            this.hideLoading();
+        }
+    }
+
+    displayResults(stressTest) {
+        this.hideLoading();
+        document.getElementById('stressInitial').style.display = 'none';
+        document.getElementById('stressResults').style.display = 'block';
+
+        // Check if metrics exist and are valid
+        if (!stressTest || !stressTest.metrics) {
+            console.error('Invalid stress test data:', stressTest);
+            alert('Invalid stress test results received');
+            return;
+        }
+
+        // Update summary metrics with safe defaults
+        const metrics = stressTest.metrics;
+        document.getElementById('maxDrawdown').textContent = `${(metrics.max_drawdown || 0).toFixed(1)}%`;
+        document.getElementById('recoveryDays').textContent = metrics.recovery_day || 'N/A';
+        document.getElementById('finalReturn').textContent = `${(metrics.total_return || 0).toFixed(1)}%`;
+        document.getElementById('stressVolatility').textContent = `${(metrics.volatility || 0).toFixed(1)}%`;
+
+        // Update recovery chart if path exists
+        if (stressTest.recovery_path && stressTest.recovery_path.length > 0) {
+            this.updateRecoveryChart(stressTest.recovery_path);
+        }
+
+        // Update metrics table
+        this.updateMetricsTable(metrics);
+
+        // Update rebalancing analysis if it exists
+        if (stressTest.rebalance_analysis) {
+            this.updateRebalancingAnalysis(stressTest.rebalance_analysis);
+        }
+    }
+
+    updateRecoveryChart(recoveryPath) {
+        const ctx = document.getElementById('recoveryChart').getContext('2d');
+        
+        if (this.chart) {
+            this.chart.destroy();
+        }
+
+        const labels = recoveryPath.map(point => `Day ${point.day}`);
+        const navValues = recoveryPath.map(point => point.nav);
+
+        this.chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Portfolio NAV',
+                    data: navValues,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.3
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        grid: { color: 'rgba(0,0,0,0.05)' }
+                    }
+                },
+                plugins: {
+                    legend: { position: 'top' }
+                }
+            }
+        });
+    }
+
+    updateMetricsTable(metrics) {
+        const tbody = document.getElementById('metricsTable');
+        tbody.innerHTML = `
+            <tr><td>Max Drawdown</td><td class="text-end">${(metrics.max_drawdown || 0).toFixed(2)}%</td></tr>
+            <tr><td>Worst NAV</td><td class="text-end">$${(metrics.worst_nav || 0).toFixed(2)}</td></tr>
+            <tr><td>Final NAV</td><td class="text-end">$${(metrics.final_nav || 0).toFixed(2)}</td></tr>
+            <tr><td>Total Return</td><td class="text-end">${(metrics.total_return || 0).toFixed(2)}%</td></tr>
+            <tr><td>Volatility</td><td class="text-end">${(metrics.volatility || 0).toFixed(2)}%</td></tr>
+        `;
+    }
+
+    updateRebalancingAnalysis(analysis) {
+        if (!analysis) return;
+        
+        document.getElementById('rebalanceRecommendation').textContent = analysis.recommendation || 'No recommendation available';
+        document.getElementById('normalCost').textContent = `$${(analysis.normal_cost || 0).toFixed(2)}`;
+        document.getElementById('stressedCost').textContent = `$${(analysis.stressed_cost || 0).toFixed(2)}`;
+        document.getElementById('costIncrease').textContent = `+${(analysis.cost_increase || 0).toFixed(0)}%`;
+        document.getElementById('liquidityRisk').textContent = analysis.liquidity_risk || 'Unknown';
+        document.getElementById('liquidityRisk').className = `badge bg-${analysis.liquidity_risk === 'High' ? 'danger' : analysis.liquidity_risk === 'Medium' ? 'warning' : 'success'}`;
+    }
+
+    showLoading() {
+        document.getElementById('stressInitial').style.display = 'none';
+        document.getElementById('stressResults').style.display = 'none';
+        document.getElementById('stressLoading').style.display = 'block';
+    }
+
+    hideLoading() {
+        document.getElementById('stressLoading').style.display = 'none';
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new StressTestLab();
+});
+</script>
+{% endblock %}

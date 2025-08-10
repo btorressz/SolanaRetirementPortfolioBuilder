@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Solana Retirement Portfolio Builder{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/main.css') }}" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark solana-gradient">
+        <div class="container">
+            <a class="navbar-brand fw-bold" href="{{ url_for('dashboard') }}">
+                <i class="fas fa-coins me-2"></i>
+                Solana Retirement Portfolio
+            </a>
+            
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-chart-line me-1"></i>Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'rebalance' %}active{% endif %}" href="{{ url_for('rebalance') }}">
+                            <i class="fas fa-balance-scale me-1"></i>Rebalance
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'stress_lab' %}active{% endif %}" href="{{ url_for('stress_lab') }}">
+                            <i class="fas fa-vial me-1"></i>Stress Lab
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">
+                            <i class="fas fa-chart-area me-1"></i>Analytics
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle dark mode">
+                            <i class="fas fa-moon" id="theme-icon"></i>
+                        </button>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+
+
+    <!-- Main Content -->
+    <main class="flex-fill">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-light py-4 mt-5">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Solana Retirement Portfolio Builder</h6>
+                    <p class="small mb-0">Educational tool for portfolio simulation on Solana</p>
+                </div>
+                <div class="col-md-6 text-md-end">
+                    <p class="small mb-0">
+                        <i class="fas fa-exclamation-triangle me-1"></i>
+                        Prices via Jupiter API • For simulation only
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Theme Toggle and Health Monitoring -->
+    <script>
+        // Theme Management
+        let currentTheme = localStorage.getItem('theme') || 'light';
+        
+        function toggleTheme() {
+            currentTheme = currentTheme === 'light' ? 'dark' : 'light';
+            applyTheme(currentTheme);
+            localStorage.setItem('theme', currentTheme);
+        }
+        
+        function applyTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            const icon = document.getElementById('theme-icon');
+            if (icon) {
+                icon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+            }
+        }
+        
+        // Apply theme on load
+        document.addEventListener('DOMContentLoaded', function() {
+            applyTheme(currentTheme);
+        });
+        
+        // Health Monitoring
+        function startHealthMonitoring() {
+            if (typeof updateHealthWidget !== 'function') {
+                window.updateHealthWidget = function() {
+                    // Update cache health
+                    fetch('/api/health/cache')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const stats = data.cache_stats;
+                                const cacheIndicator = document.getElementById('cacheIndicator');
+                                const cacheStatus = document.getElementById('cacheStatus');
+                                
+                                if (stats.hit_rate > 70) {
+                                    cacheIndicator.className = 'health-indicator success';
+                                } else if (stats.hit_rate > 40) {
+                                    cacheIndicator.className = 'health-indicator warning';
+                                } else {
+                                    cacheIndicator.className = 'health-indicator danger';
+                                }
+                                
+                                cacheStatus.textContent = `${stats.hit_rate}%`;
+                            }
+                        })
+                        .catch(err => {
+                            console.log('Cache health check failed:', err);
+                            document.getElementById('cacheIndicator').className = 'health-indicator danger';
+                            document.getElementById('cacheStatus').textContent = 'Error';
+                        });
+                    
+                    // Update latency health
+                    fetch('/api/health/quotes')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const metrics = data.quote_latency;
+                                const latencyIndicator = document.getElementById('latencyIndicator');
+                                const latencyStatus = document.getElementById('latencyStatus');
+                                
+                                latencyIndicator.className = `health-indicator ${metrics.status_color === 'success' ? 'success' : metrics.status_color === 'warning' ? 'warning' : 'danger'}`;
+                                latencyStatus.textContent = `${metrics.p95_latency_ms}ms`;
+                            }
+                        })
+                        .catch(err => {
+                            console.log('Latency health check failed:', err);
+                            document.getElementById('latencyIndicator').className = 'health-indicator danger';
+                            document.getElementById('latencyStatus').textContent = 'Error';
+                        });
+                };
+            }
+            
+            // Update immediately and then every 10 seconds
+            updateHealthWidget();
+            setInterval(updateHealthWidget, 10000);
+        }
+        
+        // Keyboard navigation enhancement
+        document.addEventListener('keydown', function(e) {
+            // Alt + T for theme toggle
+            if (e.altKey && e.key === 't') {
+                e.preventDefault();
+                toggleTheme();
+            }
+        });
+    </script>
+    
+    <!-- Accessibility Enhancement Script -->
+    <script src="{{ url_for('static', filename='js/accessibility.js') }}"></script>
+    
+    <!-- Custom JS -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

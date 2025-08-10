@@ -1,0 +1,668 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Solana Retirement Portfolio{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h2 class="mb-1">Advanced Analytics</h2>
+                    <p class="text-muted mb-0">Real-time market monitoring and volatility analysis</p>
+                </div>
+                <div>
+                    <div class="d-flex gap-2">
+                        <a href="{{ url_for('stress_lab') }}" class="btn btn-outline-warning">
+                            <i class="fas fa-vial me-1"></i>Stress Lab
+                        </a>
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-secondary">
+                            <i class="fas fa-arrow-left me-1"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Health & Status Row -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">System Health Monitor</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="health-indicator mb-2" id="jupiterHealth">
+                                    <i class="fas fa-circle text-secondary fa-2x"></i>
+                                </div>
+                                <div class="small text-muted">Jupiter API</div>
+                                <div class="fw-bold" id="jupiterLatency">0ms</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="health-indicator mb-2" id="rviHealth">
+                                    <i class="fas fa-circle text-secondary fa-2x"></i>
+                                </div>
+                                <div class="small text-muted">RVI Service</div>
+                                <div class="fw-bold" id="rviStatus">Offline</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="health-indicator mb-2" id="cacheHealth">
+                                    <i class="fas fa-database fa-2x text-info"></i>
+                                </div>
+                                <div class="small text-muted">Cache</div>
+                                <div class="fw-bold" id="cacheHitRate">0%</div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center">
+                                <div class="health-indicator mb-2" id="systemHealth">
+                                    <i class="fas fa-server fa-2x text-success"></i>
+                                </div>
+                                <div class="small text-muted">System</div>
+                                <div class="fw-bold" id="systemStatus">Healthy</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="card-title mb-0">RVI Service Stats</h6>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Updates:</span>
+                            <span id="updateCount" class="fw-bold">0</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Error Rate:</span>
+                            <span id="errorRate" class="fw-bold">0%</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Last Update:</span>
+                            <span id="lastUpdate" class="fw-bold small">Never</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span>Samples:</span>
+                            <span id="totalSamples" class="fw-bold">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- RVI & Volatility Charts -->
+    <div class="row mb-4">
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Realized Volatility Index (RVI)</h5>
+                        <div class="btn-group btn-group-sm">
+                            <button class="btn btn-outline-secondary active" data-timeframe="1h">1H</button>
+                            <button class="btn btn-outline-secondary" data-timeframe="4h">4H</button>
+                            <button class="btn btn-outline-secondary" data-timeframe="24h">24H</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="rviChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Market Stability Score</h5>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="stabilityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Token Analysis -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h5 class="card-title mb-0">Token Analysis Matrix</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Token</th>
+                                    <th>Current Price</th>
+                                    <th>RVI</th>
+                                    <th>Stability Score</th>
+                                    <th>Avg Change</th>
+                                    <th>Max Change</th>
+                                    <th>Anomalies</th>
+                                    <th>Slippage Curve</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tokenAnalysisTable">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Depth Analysis -->
+    <div class="row mb-4">
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Liquidity Depth Analysis</h5>
+                        <select class="form-select form-select-sm" style="width: auto;" id="depthTokenSelect">
+                            {% for symbol, mint in tokens.items() %}
+                            <option value="{{ mint }}">{{ symbol }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div style="height: 300px;">
+                        <canvas id="depthChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <h6 class="card-title mb-0">Anomaly Alerts</h6>
+                </div>
+                <div class="card-body">
+                    <div id="anomalyAlerts" class="anomaly-container">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <div>No anomalies detected</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Glidepath Preview -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="card-title mb-0">Portfolio Glidepath</h5>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="enableGlidepath">
+                            <label class="form-check-label" for="enableGlidepath">
+                                Enable Auto Glidepath
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label">Target Date (Years from now)</label>
+                        <input type="range" class="form-range" id="glidepathSlider" 
+                               min="1" max="30" value="15" step="1">
+                        <div class="d-flex justify-content-between">
+                            <small class="text-muted">1 year</small>
+                            <span id="glidepathYears" class="fw-bold">15 years</span>
+                            <small class="text-muted">30 years</small>
+                        </div>
+                    </div>
+                    <div style="height: 300px;">
+                        <canvas id="glidepathChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+class AnalyticsDashboard {
+    constructor() {
+        this.charts = {};
+        this.updateInterval = null;
+        this.tokens = {{ tokens | tojson | safe }};
+        
+        this.initializeCharts();
+        this.bindEvents();
+        this.startUpdates();
+    }
+
+    initializeCharts() {
+        // RVI Chart
+        this.charts.rvi = new Chart(document.getElementById('rviChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+
+        // Stability Chart  
+        this.charts.stability = new Chart(document.getElementById('stabilityChart'), {
+            type: 'bar',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Stability Score',
+                    data: [],
+                    backgroundColor: 'rgba(0, 212, 170, 0.3)',
+                    borderColor: '#00D4AA',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { beginAtZero: true, max: 100 }
+                }
+            }
+        });
+
+        // Depth Chart
+        this.charts.depth = new Chart(document.getElementById('depthChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Slippage %',
+                    data: [],
+                    borderColor: '#FF6B35',
+                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { 
+                        title: { display: true, text: 'Trade Size (USD)' }
+                    },
+                    y: { 
+                        beginAtZero: true,
+                        title: { display: true, text: 'Slippage %' }
+                    }
+                }
+            }
+        });
+
+        // Glidepath Chart
+        this.charts.glidepath = new Chart(document.getElementById('glidepathChart'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: []
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { 
+                        beginAtZero: true, 
+                        max: 100,
+                        title: { display: true, text: 'Allocation %' }
+                    }
+                }
+            }
+        });
+    }
+
+    bindEvents() {
+        // Glidepath slider
+        document.getElementById('glidepathSlider').addEventListener('input', (e) => {
+            document.getElementById('glidepathYears').textContent = `${e.target.value} years`;
+            this.updateGlidepath();
+        });
+
+        // Depth token selector
+        document.getElementById('depthTokenSelect').addEventListener('change', (e) => {
+            this.updateDepthChart(e.target.value);
+        });
+
+        // Timeframe buttons for RVI
+        document.querySelectorAll('[data-timeframe]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('[data-timeframe]').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                this.updateRVIChart(e.target.dataset.timeframe);
+            });
+        });
+    }
+
+    startUpdates() {
+        this.updateAll();
+        this.updateInterval = setInterval(() => {
+            this.updateAll();
+        }, 15000); // Update every 15 seconds
+    }
+
+    async updateAll() {
+        try {
+            await Promise.all([
+                this.updateHealth(),
+                this.updateRVIData(),
+                this.updateStabilityData(),
+                this.updateTokenAnalysis(),
+                this.updateAnomalies()
+            ]);
+        } catch (error) {
+            console.error('Error updating analytics:', error);
+        }
+    }
+
+    async updateHealth() {
+        try {
+            const response = await fetch('/api/health/quotes');
+            const data = await response.json();
+            
+            if (data.success) {
+                const health = data.health;
+                
+                // Update Jupiter API status
+                const jupiterIcon = document.getElementById('jupiterHealth').querySelector('i');
+                jupiterIcon.className = `fas fa-circle fa-2x ${health.api_status === 'healthy' ? 'text-success' : 'text-danger'}`;
+                document.getElementById('jupiterLatency').textContent = `${Math.round(health.response_time_ms)}ms`;
+                
+                // Update RVI service
+                const rviIcon = document.getElementById('rviHealth').querySelector('i');
+                const isRunning = health.service_stats.is_running;
+                rviIcon.className = `fas fa-circle fa-2x ${isRunning ? 'text-success' : 'text-secondary'}`;
+                document.getElementById('rviStatus').textContent = isRunning ? 'Active' : 'Offline';
+                
+                // Update cache stats
+                document.getElementById('cacheHitRate').textContent = `${(health.cache_stats.hit_rate * 100).toFixed(0)}%`;
+                
+                // Update service stats
+                document.getElementById('updateCount').textContent = health.service_stats.update_count;
+                document.getElementById('errorRate').textContent = `${(health.service_stats.error_rate * 100).toFixed(1)}%`;
+                document.getElementById('totalSamples').textContent = health.service_stats.total_samples;
+                
+                if (health.service_stats.last_update) {
+                    const lastUpdate = new Date(health.service_stats.last_update);
+                    document.getElementById('lastUpdate').textContent = lastUpdate.toLocaleTimeString();
+                }
+            }
+        } catch (error) {
+            console.error('Error updating health:', error);
+        }
+    }
+
+    async updateRVIData() {
+        try {
+            const response = await fetch('/api/analytics/rvi');
+            const data = await response.json();
+            
+            if (data.success && data.rvi) {
+                const tokens = Object.keys(data.rvi);
+                const values = Object.values(data.rvi);
+                
+                this.charts.rvi.data.labels = tokens;
+                this.charts.rvi.data.datasets = [{
+                    label: 'RVI',
+                    data: values,
+                    borderColor: '#9945FF',
+                    backgroundColor: 'rgba(153, 69, 255, 0.1)',
+                    fill: false
+                }];
+                this.charts.rvi.update('none');
+            }
+        } catch (error) {
+            console.error('Error updating RVI:', error);
+        }
+    }
+
+    async updateStabilityData() {
+        try {
+            const response = await fetch('/api/analytics/stability');
+            const data = await response.json();
+            
+            if (data.success && data.stability) {
+                const tokens = Object.keys(data.stability);
+                const scores = tokens.map(token => data.stability[token].stability_score || 0);
+                
+                this.charts.stability.data.labels = tokens;
+                this.charts.stability.data.datasets[0].data = scores;
+                this.charts.stability.update('none');
+            }
+        } catch (error) {
+            console.error('Error updating stability:', error);
+        }
+    }
+
+    async updateTokenAnalysis() {
+        try {
+            const [rviResponse, stabilityResponse, quotesResponse] = await Promise.all([
+                fetch('/api/analytics/rvi'),
+                fetch('/api/analytics/stability'),
+                fetch('/api/quotes')
+            ]);
+            
+            const rviData = await rviResponse.json();
+            const stabilityData = await stabilityResponse.json();
+            const quotesData = await quotesResponse.json();
+            
+            const tbody = document.getElementById('tokenAnalysisTable');
+            tbody.innerHTML = '';
+            
+            for (const [token, mint] of Object.entries(this.tokens)) {
+                const row = tbody.insertRow();
+                
+                const rvi = rviData.success ? (rviData.rvi[token] || 0) : 0;
+                const stability = stabilityData.success ? (stabilityData.stability[token]?.stability_score || 0) : 0;
+                const price = quotesData.success ? (quotesData.quotes[token] || 0) : 0;
+                const avgChange = stabilityData.success ? (stabilityData.stability[token]?.average_change || 0) : 0;
+                const maxChange = stabilityData.success ? (stabilityData.stability[token]?.max_change || 0) : 0;
+                const anomalies = stabilityData.success ? (stabilityData.anomalies[token]?.length || 0) : 0;
+                
+                row.innerHTML = `
+                    <td><strong>${token}</strong></td>
+                    <td>$${price.toFixed(price < 1 ? 6 : 2)}</td>
+                    <td>${(rvi * 100).toFixed(2)}%</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-2" style="height: 10px;">
+                                <div class="progress-bar bg-success" style="width: ${stability}%"></div>
+                            </div>
+                            <small>${stability.toFixed(0)}</small>
+                        </div>
+                    </td>
+                    <td>${(avgChange * 100).toFixed(3)}%</td>
+                    <td>${(maxChange * 100).toFixed(2)}%</td>
+                    <td>
+                        <span class="badge bg-${anomalies > 0 ? 'warning' : 'success'}">
+                            ${anomalies}
+                        </span>
+                    </td>
+                    <td>
+                        <canvas class="slippage-sparkline" data-mint="${mint}" width="50" height="20"></canvas>
+                    </td>
+                `;
+            }
+            
+            // Update sparklines
+            this.updateSlippageSparklines();
+            
+        } catch (error) {
+            console.error('Error updating token analysis:', error);
+        }
+    }
+
+    async updateSlippageSparklines() {
+        const sparklines = document.querySelectorAll('.slippage-sparkline');
+        
+        for (const canvas of sparklines) {
+            const mint = canvas.dataset.mint;
+            try {
+                const response = await fetch(`/api/quotes/ladder?mint=${mint}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const ctx = canvas.getContext('2d');
+                    const slippages = data.ladder.map(l => l.slippage_bps / 100);
+                    
+                    // Simple sparkline drawing
+                    ctx.clearRect(0, 0, 50, 20);
+                    ctx.strokeStyle = '#9945FF';
+                    ctx.lineWidth = 1;
+                    
+                    const max = Math.max(...slippages);
+                    ctx.beginPath();
+                    slippages.forEach((value, index) => {
+                        const x = (index / (slippages.length - 1)) * 50;
+                        const y = 20 - (value / max) * 20;
+                        if (index === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    });
+                    ctx.stroke();
+                }
+            } catch (error) {
+                console.error(`Error updating sparkline for ${mint}:`, error);
+            }
+        }
+    }
+
+    async updateAnomalies() {
+        try {
+            const response = await fetch('/api/analytics/stability');
+            const data = await response.json();
+            
+            const container = document.getElementById('anomalyAlerts');
+            
+            if (data.success && data.anomalies && Object.keys(data.anomalies).length > 0) {
+                container.innerHTML = '';
+                
+                for (const [token, anomalies] of Object.entries(data.anomalies)) {
+                    for (const anomaly of anomalies.slice(0, 3)) { // Show last 3
+                        const alert = document.createElement('div');
+                        alert.className = `alert alert-${anomaly.severity === 'high' ? 'danger' : 'warning'} alert-sm mb-2`;
+                        alert.innerHTML = `
+                            <div class="d-flex justify-content-between">
+                                <strong>${token}</strong>
+                                <small>${new Date(anomaly.timestamp).toLocaleTimeString()}</small>
+                            </div>
+                            <div class="small">Z-score: ${anomaly.z_score.toFixed(2)}</div>
+                        `;
+                        container.appendChild(alert);
+                    }
+                }
+            } else {
+                container.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-check-circle fa-2x mb-2"></i>
+                        <div>No anomalies detected</div>
+                    </div>
+                `;
+            }
+        } catch (error) {
+            console.error('Error updating anomalies:', error);
+        }
+    }
+
+    async updateDepthChart(mint) {
+        try {
+            const response = await fetch(`/api/quotes/ladder?mint=${mint}`);
+            const data = await response.json();
+            
+            if (data.success) {
+                const sizes = data.ladder.map(l => `$${l.size_usd}`);
+                const slippages = data.ladder.map(l => l.slippage_bps / 100);
+                
+                this.charts.depth.data.labels = sizes;
+                this.charts.depth.data.datasets[0].data = slippages;
+                this.charts.depth.update('none');
+            }
+        } catch (error) {
+            console.error('Error updating depth chart:', error);
+        }
+    }
+
+    async updateGlidepath() {
+        try {
+            const response = await fetch('/api/glidepath');
+            const data = await response.json();
+            
+            if (data.success) {
+                const labels = data.glidepath.map(point => point.years_from_now);
+                const datasets = [];
+                
+                const tokens = Object.keys(data.glidepath[0].weights);
+                const colors = ['#9945FF', '#FF6B35', '#00D4AA', '#FFD700', '#FF69B4'];
+                
+                tokens.forEach((token, index) => {
+                    datasets.push({
+                        label: token,
+                        data: data.glidepath.map(point => point.weights[token]),
+                        borderColor: colors[index % colors.length],
+                        backgroundColor: colors[index % colors.length] + '20',
+                        fill: false
+                    });
+                });
+                
+                this.charts.glidepath.data.labels = labels;
+                this.charts.glidepath.data.datasets = datasets;
+                this.charts.glidepath.update('none');
+            }
+        } catch (error) {
+            console.error('Error updating glidepath:', error);
+        }
+    }
+
+    destroy() {
+        if (this.updateInterval) {
+            clearInterval(this.updateInterval);
+        }
+        
+        Object.values(this.charts).forEach(chart => {
+            chart.destroy();
+        });
+    }
+}
+
+// Initialize when DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new AnalyticsDashboard();
+});
+</script>
+{% endblock %}
