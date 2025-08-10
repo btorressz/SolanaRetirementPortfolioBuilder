@@ -195,6 +195,8 @@ HEALTH_CHECK_INTERVAL = 10  # seconds
 
 ![Solana Retirement Portfolio Builder Screenshot](https://github.com/btorressz/SolanaRetirementPortfolioBuilder/blob/main/solretirement3.jpg)
 
+![Solana Retirement Portfolio Builder Screenshot](https://github.com/btorressz/SolanaRetirementPortfolioBuilder/blob/main/solretirement4.jpg)
+
 
 
 
