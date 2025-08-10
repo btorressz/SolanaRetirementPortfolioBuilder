@@ -36,6 +36,8 @@ A comprehensive Flask-based web application for creating, managing, and rebalanc
 - **Screen Reader**: WCAG 2.1 AA compliant with comprehensive aria-labels
 - **Responsive Design**: Mobile-first responsive layout with Bootstrap 5
 
+  ---
+
 ## 🏗️ Architecture
 
 ### Backend Components
