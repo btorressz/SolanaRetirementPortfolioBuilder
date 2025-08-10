@@ -139,7 +139,7 @@ HEALTH_CHECK_INTERVAL = 10  # seconds
   ## 🧪 Testing
 
 ### Manual Testing Checklist
-- [ ] Portfolio weight adjustments (sliders and buttons)
+- [✅] Portfolio weight adjustments (sliders and buttons)
 - [ ] Theme toggle functionality (light/dark)
 - [ ] Keyboard navigation and shortcuts
 - [ ] Health widget status updates
