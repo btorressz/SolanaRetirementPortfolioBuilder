@@ -113,7 +113,7 @@ static/
 - **Fallbacks**: Mock price generation during API outages
 - **Health Checks**: `/api/health/cache` and `/api/health/quotes`
 
-  ---
+  
 
 ### Performance Settings
 ```python
@@ -123,6 +123,8 @@ CACHE_SIZE = 1000       # max entries
 API_TIMEOUT = 10        # seconds
 HEALTH_CHECK_INTERVAL = 10  # seconds
 ```
+
+---
 
 ## 📊 API Endpoints
 
@@ -158,6 +160,7 @@ HEALTH_CHECK_INTERVAL = 10  # seconds
 - [ ] API response times <2s under normal load
 - [ ] Health widget updates every 10 seconds
 - [ ] Graceful fallback during API outages
+
 
 ## 🛡️ Security & Privacy
 
