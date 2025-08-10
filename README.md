@@ -103,13 +103,17 @@ static/
 - **stSOL**: Lido staked SOL  
 - **BONK**: Popular meme token
 - **USDC**: USD Coin stable coin
-- **USDT** Tether 
+- **USDT** Tether
+
+  ---
 
 ### API Integration
 - **Jupiter API**: Primary price feed via `price.jup.ag/v4`
 - **Caching**: 5-10 second TTL with LRU cache
 - **Fallbacks**: Mock price generation during API outages
 - **Health Checks**: `/api/health/cache` and `/api/health/quotes`
+
+  ---
 
 ### Performance Settings
 ```python
