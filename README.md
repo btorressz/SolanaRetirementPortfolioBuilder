@@ -73,6 +73,7 @@ static/
 └── js/accessibility.js # Keyboard navigation & screen reader support
 ```
 
+---
 
 # 🎯 Usage Guide
 
