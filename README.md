@@ -163,10 +163,12 @@ HEALTH_CHECK_INTERVAL = 10  # seconds
 ### API Security
 - **Rate Limiting**: Built-in Jupiter API rate limits
 - **Timeout Protection**: 10-second request timeouts
-
-
-
-
-
 - **Error Handling**: Comprehensive error catching and logging
+
+
+
+### 💡 Inspiration
+- After reviewing the recent executive order opening 401(k) plans to crypto, real estate, and other alternative assets, I was inspired to build a proof-of-concept over the weekend — the Solana Retirement Portfolio Builder. The idea was to explore how such a policy shift could translate into practical tools for portfolio construction, risk analysis, and performance modeling in a retirement-focused crypto allocation. This simulator serves as a research platform, enabling backtesting, stress testing, and advanced analytics for Solana-based portfolios, with potential applications in evaluating risk, rebalancing strategies, and long-term return profiles for 401(k) or retirement fund scenarios. 
+
+
 
