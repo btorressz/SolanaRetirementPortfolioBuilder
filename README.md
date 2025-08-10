@@ -135,3 +135,33 @@ HEALTH_CHECK_INTERVAL = 10  # seconds
 - `GET /api/health/cache` - Cache performance metrics
 - `GET /api/health/quotes` - API latency and status
 - `GET /api/health/system` - Overall system health
+
+  ## 🧪 Testing
+
+### Manual Testing Checklist
+- [ ] Portfolio weight adjustments (sliders and buttons)
+- [ ] Theme toggle functionality (light/dark)
+- [ ] Keyboard navigation and shortcuts
+- [ ] Health widget status updates
+- [ ] Responsive design on mobile
+- [ ] Screen reader compatibility
+
+### Performance Testing
+- [ ] Cache hit rates >70% during normal operation
+- [ ] API response times <2s under normal load
+- [ ] Health widget updates every 10 seconds
+- [ ] Graceful fallback during API outages
+
+## 🛡️ Security & Privacy
+
+### Data Handling
+- **Session-based**: No persistent user data storage
+- **No Authentication**: Educational/demo application
+- **Mock Fallbacks**: Simulated data during API outages
+- **Client-side State**: Portfolio stored in browser sessions
+
+### API Security
+- **Rate Limiting**: Built-in Jupiter API rate limits
+- **Timeout Protection**: 10-second request timeouts
+- **Error Handling**: Comprehensive error catching and logging
+
