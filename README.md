@@ -184,5 +184,13 @@ HEALTH_CHECK_INTERVAL = 10  # seconds
 
 ### 📸 Screenshots 
 
+> ⚠️ **Note:** When these screenshots were taken, the API was not fetching live data for a few listed cryptocurrencies.  
+> This was due to temporary data availability issues and does not reflect the current functionality.  
+> I will be reviewing again to ensure prices are correct.
+
+
+![Solana Retirement Portfolio Builder Screenshot](https://github.com/btorressz/SolanaRetirementPortfolioBuilder/blob/main/solretirement1.jpg)
+
+
 
 
