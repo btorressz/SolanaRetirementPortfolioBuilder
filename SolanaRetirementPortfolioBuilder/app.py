@@ -77,29 +77,21 @@ BASKET_PRESETS = {
 def get_quotes_with_fallback():
     """Get quotes with fallback prices for stability"""
     quotes = {}
-    fallback_prices = {
-        'SOL': 182.0,  # Current Kraken price
-        'mSOL': 195.0,  # mSOL typically trades at premium to SOL
-        'stSOL': 190.0, # Liquid staking derivative
-        'BONK': 0.000027,  # Current market price
-        'USDC': 0.9999,  # Stable coin
-        'USDT': 0.9998   # Tether stable coin
-    }
+    # All pricing handled by Jupiter API with smart fallbacks (Kraken, emergency prices)
     
     for token in SUPPORTED_TOKENS:
         mint = SUPPORTED_TOKENS[token]
         try:
             price = jupiter_api.get_price(mint)
-            # Use fallback if price is 0, None, or negative
-            if price is None or price <= 0:
-                quotes[token] = fallback_prices.get(token, 0.0)
-                logging.info(f"Using fallback price for {token}: ${fallback_prices.get(token, 0.0)}")
+            # Jupiter API now handles all fallbacks internally (Kraken, emergency prices, etc.)
+            quotes[token] = price if price > 0 else 0.0
+            if price > 0:
+                logging.info(f"✓ Live price for {token}: ${price:.6f}")
             else:
-                quotes[token] = price
+                logging.warning(f"✗ No live price available for {token}")
         except Exception as e:
-            logging.warning(f"Error getting price for {token}: {e}")
-            quotes[token] = fallback_prices.get(token, 0.0)
-            logging.info(f"Using fallback price for {token}: ${fallback_prices.get(token, 0.0)}")
+            logging.error(f"Error getting price for {token}: {e}")
+            quotes[token] = 0.0
     
     return quotes
 
