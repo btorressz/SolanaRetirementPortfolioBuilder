@@ -502,3 +502,4 @@ class JupiterAPI:
             'total_requests': total_requests
         }
 
+
