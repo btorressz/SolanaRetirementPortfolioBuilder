@@ -75,23 +75,22 @@ BASKET_PRESETS = {
 }
 
 def get_quotes_with_fallback():
-    """Get quotes with fallback prices for stability"""
-    quotes = {}
-    # All pricing handled by Jupiter API with smart fallbacks (Kraken, emergency prices)
+    """Get live quotes from background polling service"""
+    from live_pricing_service import live_pricing
     
-    for token in SUPPORTED_TOKENS:
-        mint = SUPPORTED_TOKENS[token]
-        try:
-            price = jupiter_api.get_price(mint)
-            # Jupiter API now handles all fallbacks internally (Kraken, emergency prices, etc.)
-            quotes[token] = price if price > 0 else 0.0
-            if price > 0:
-                logging.info(f"✓ Live price for {token}: ${price:.6f}")
-            else:
-                logging.warning(f"✗ No live price available for {token}")
-        except Exception as e:
-            logging.error(f"Error getting price for {token}: {e}")
-            quotes[token] = 0.0
+    # Ensure service is running
+    if not live_pricing.is_running:
+        live_pricing.start_polling()
+        time.sleep(2)  # Give it a moment to fetch initial prices
+    
+    quotes = live_pricing.get_live_prices()
+    
+    # Log current pricing status
+    for token in SUPPORTED_TOKENS.keys():
+        price = quotes.get(token, 0.0)
+        is_fresh = live_pricing.is_price_fresh(token, 30)
+        status = "LIVE" if is_fresh and price > 0 else "STALE" if price > 0 else "MISSING"
+        logging.info(f"📊 {token}: ${price:.6f} ({status})")
     
     return quotes
 
@@ -168,20 +167,21 @@ def rebalance():
 
 @app.route('/api/quotes')
 def get_quotes():
-    """Get live quotes with reliable fallbacks"""
+    """Get live quotes from background pricing service"""
     tokens = request.args.get('tokens', '').split(',')
     if not tokens or tokens == ['']:
         tokens = list(SUPPORTED_TOKENS.keys())
     
     try:
-        # Use the comprehensive fallback system
+        # Use live pricing service for real-time data
         all_quotes = get_quotes_with_fallback()
         quotes = {token: all_quotes.get(token, 0.0) for token in tokens if token in SUPPORTED_TOKENS}
         
         return jsonify({
             'success': True,
             'quotes': quotes,
-            'timestamp': datetime.now().isoformat()
+            'timestamp': datetime.now().isoformat(),
+            'source': 'live_pricing_service'
         })
     except Exception as e:
         logging.error(f"Error fetching quotes: {e}")
@@ -189,6 +189,41 @@ def get_quotes():
             'success': False,
             'error': str(e)
         }), 500
+
+@app.route('/api/pricing/status')
+def pricing_status():
+    """Get live pricing service status and health"""
+    try:
+        from live_pricing_service import live_pricing
+        status = live_pricing.get_status()
+        prices = live_pricing.get_live_prices()
+        
+        # Add freshness info for each token
+        token_status = {}
+        for token in SUPPORTED_TOKENS.keys():
+            is_fresh = live_pricing.is_price_fresh(token, 30)
+            price = prices.get(token, 0.0)
+            token_status[token] = {
+                'price': price,
+                'fresh': is_fresh,
+                'status': 'LIVE' if is_fresh and price > 0 else 'STALE' if price > 0 else 'MISSING'
+            }
+        
+        return jsonify({
+            'success': True,
+            'service_status': status,
+            'token_status': token_status,
+            'timestamp': datetime.now().isoformat()
+        })
+    except Exception as e:
+        logging.error(f"Error getting pricing status: {e}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# Legacy alias for backwards compatibility
+@app.route('/api/prices')
+def api_prices():
+    """Legacy endpoint - redirects to /api/quotes"""
+    return get_quotes()
 
 
 
